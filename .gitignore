@@ -1,0 +1,9 @@
+__pycache__/
+data/
+docs/
+.semantic_cache/
+.mypy_cache/
+.pytest_cache/
+
+config.json
+*.pyc

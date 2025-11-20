@@ -1,0 +1,14 @@
+{
+    "PLAN_LLM_MODEL": "your-plan-llm-model",
+    "SUMMARY_LLM_MODEL": "your-summary-llm-model",
+    "ANALYSIS_LLM_MODEL": "your-analysis-llm-model",
+    "CODE_LLM_MODEL": "your-code-llm-model",
+    "LLM_API_KEY": "your-llm-api-key",
+    "LLM_API_BASE": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "CONTEXT7_API_KEY": "your-context7-api-key",
+    "BOCHA_API_KEY": "your-bocha-api-key",
+    "GITEE_TOKEN": "your-gitee-token",
+    "RECURSION_LIMIT": 1000,
+    "SUMMARY_MAX_LENGTH": 4000,
+    "SUMMARY_THRESHOLD": 10000
+}
