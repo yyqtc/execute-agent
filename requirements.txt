@@ -1,0 +1,17 @@
+# 核心依赖
+langchain>=1.0.2
+langchain-openai>=1.0.2
+langgraph>=1.0.1
+langchain_mcp_adapters>=0.1.12
+requests>=2.31.0
+typing-extensions>=4.0.0
+
+# 语义搜索依赖
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.0
+numpy>=1.21.0
+
+# 开发依赖（可选）
+pylint>=2.15.0
+flake8>=6.0.0
+mypy>=1.0.0
