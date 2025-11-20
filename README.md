@@ -40,7 +40,7 @@ Execute Agent 是一个智能代码执行助手，基于 LangChain 和 LangGraph
 
 1. 克隆项目仓库：
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/yyqtc/execute-agent.git
    cd execute-agent
    ```
 
