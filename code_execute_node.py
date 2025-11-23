@@ -90,8 +90,6 @@ async def gather_development_log():
     """
     working_dir = os.getcwd()
     development_log_file = os.path.join(working_dir, "development_log.md")
-    loop = asyncio.get_running_loop()
-    log_content = await loop.run_in_executor(None, _read_log_sync, development_log_file)
     
     def _read_log_sync(file_path: str) -> str:
         if os.path.exists(file_path):
@@ -107,6 +105,9 @@ async def gather_development_log():
     def _truncate_log_content(log_content: str) -> str:
         return log_content[-1 * config["SUMMARY_MAX_LENGTH"]:]
 
+    loop = asyncio.get_running_loop()
+    log_content = await loop.run_in_executor(None, _read_log_sync, development_log_file)
+
     if len(log_content) < config["SUMMARY_THRESHOLD"]:
         return (log_content, "development_log")
     else:
@@ -120,6 +121,51 @@ async def gather_development_log():
         loop = asyncio.get_running_loop()
         loop.run_in_executor(None, _write_log_sync, development_log_file, summary_result_wrapper.content)
         return (summary_result_wrapper.content, "development_log")
+
+
+async def gather_dependencies():
+    """
+    收集可能的项目依赖
+    """
+    working_dir = os.getcwd()
+    
+    # 定义我们要查找的依赖文件清单
+    # 优先级高的在前
+    possible_dependency_files = [
+        "requirements.txt",
+        "package.json",
+        "pyproject.toml",
+        "Pipfile",
+        "go.mod",
+        "Cargo.toml",
+        "pom.xml",
+        "build.gradle"
+    ]
+
+    found_any = False
+    def _find_dependency_sync():
+        nonlocal found_any
+        dependency_list = []
+        for dependency_file in possible_dependency_files:
+            dependency_file_path = os.path.join(working_dir, dependency_file)
+            if os.path.exists(dependency_file_path):
+                try:
+                    with open(dependency_file_path, "r", encoding="utf-8") as f:
+                        dependency_list.append(f.read())
+                    found_any = True
+                except Exception as e:
+                    logging.error(f"读取依赖文件失败: {dependency_file_path}, 错误: {str(e)}")
+                    continue
+
+        return dependency_list
+
+    loop = asyncio.get_running_loop()
+    output = await loop.run_in_executor(None, _find_dependency_sync)
+
+    if not found_any:
+        return ("没有找到项目依赖", "dependencies")
+    else:
+        return ("\n".join(output), "dependencies")
 
 
 def refresh_todo_list(index: int, status: str, response: str = ""):
@@ -215,41 +261,37 @@ async def execute_node(state: PlanExecute) -> PlanExecute:
 
     async_tasks = [
         gather_project_structure(os.getcwd(), 0),
-        gather_development_log()
+        gather_development_log(),
+        gather_dependencies(),
     ]
 
     contexts = await asyncio.gather(*async_tasks)
 
+    project_structure = ""
+    development_log = ""
+    dependencies = ""
+    for context in contexts:
+        if context[1] == "project_structure":
+            project_structure = context[0]
+        elif context[1] == "development_log":
+            development_log = context[0]
+        elif context[1] == "dependencies":
+            dependencies = context[0]
+
     detailed_task = f"""
+    项目结构：
+    {project_structure}
+    
+    开发日志：
+    {development_log}
+
+    项目依赖：
+    {dependencies}
+
     完成这个任务：{task}。不要做无关的事情。
     """
 
-    # if recommend_agent is None:
-    #     logger.warning("model is None, recommend_agent initialization failed")
-    #     refresh_todo_list(state["index"], "fail", "推荐智能体初始化失败，model is None")
-    #     return {"response": "推荐智能体初始化失败，model is None"}
-
-    # if code_agent is None:
-    #     logger.warning("model is None, code_agent initialization failed")
-    #     refresh_todo_list(state["index"], "fail", "代码智能体初始化失败，model is None")
-    #     return {"response": "代码智能体初始化失败，model is None"}
-
-    # analysis_result = await recommend_agent.ainvoke(
-    #     {"messages": [("user", formatted_task)]},
-    #     {"recursion_limit": config["RECURSION_LIMIT"]},
-    # )
-    # analysis_result = analysis_result.get("messages", None)
-    # if analysis_result is None:
-    #     refresh_todo_list(state["index"], "fail", "任务分析失败，返回为空")
-    #     return {"response": "任务分析失败，返回为空"}
-
-    # analysis_result = analysis_result[-1].content
-    # if recommend_check_agent is None:
-    #     logger.warning("recommend_check_agent is not available")
-    #     refresh_todo_list(state["index"], "fail", "详细分析失败，model is None")
-    #     return {"response": "详细分析失败，model is None"}
-    # detailed_result = await recommend_check_agent.ainvoke({"input": analysis_result})
-    # detailed_task = detailed_result.content
+    logger.info(f"执行任务: {detailed_task}")
 
     result = await code_agent.ainvoke(
         {"messages": [("user", detailed_task)]},

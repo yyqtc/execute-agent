@@ -180,6 +180,9 @@ async def replan_node(state: PlanExecute) -> PlanExecute:
     {past_steps_content}
     
     根据以上信息更新我们的计划。如果你认为不需要执行更多步骤，你可以直接输出对用户问题的最终答案。否则你需要在计划中补充更多步骤。
+
+    注意！
+    1. 你不准把已经执行过的步骤补充进计划！
     """
 
     if agent is None:

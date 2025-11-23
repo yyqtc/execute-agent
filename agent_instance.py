@@ -50,7 +50,7 @@ async def initialize_code_execute_model():
             model=config.get("CODE_LLM_MODEL", "qwen-plus"),
             openai_api_key=config["LLM_API_KEY"],
             openai_api_base=config["LLM_API_BASE"],
-            temperature=0.2,
+            temperature=0.3,
         ), "code_model")
     except Exception as e:
         logger.error(f"错误: 执行用模型 初始化失败: {e}")
@@ -65,7 +65,7 @@ async def initialize_analysis_execute_model():
             model=config.get("ANALYSIS_LLM_MODEL", "qwen-plus"),
             openai_api_key=config["LLM_API_KEY"],
             openai_api_base=config["LLM_API_BASE"],
-            temperature=0.7,
+            temperature=0.3,
         ), "analysis_model")
     except Exception as e:
         logger.error(f"错误: 执行用模型 初始化失败: {e}")
@@ -85,11 +85,13 @@ async def initialize_plan_agent(model, tools=[]):
 
     注意！
     1. 当用户使用系统字眼时，除非明确告诉你分析操作系统，否侧你默认分析当前文件夹。
-    2. 你必须知道执行你的计划的是一个支持文件操作、代码搜索、终端命令执行、网络搜索等功能的开发团队！请不要让他们执行超出他们能力范围的命令！
-    3. 你的指令必须是没有歧义的！不要让开发团队猜你的意思！
-    4. 我们的预算非常有限！你的计划中不要包含重复的和不必要的步骤！
-    5. 你必须谨慎修改、删除文件，因为这些操作都是不可逆的！
-    6. 你返回的计划必须以JSON格式输出，包含steps字段，steps字段是一个数组，数组中每个元素是一个字符串，表示一个步骤。
+    2. 有两个团队执行你的计划，一个是日常助手团队，一个是代码开发团队。
+    3. 日常助手团队支持文件操作、代码搜索、终端命令执行、网络搜索等功能。但是他们不负责写代码！日常助手团队可以帮助你分析项目，以及测试项目。
+    4. 代码开发团队只负责写代码，不负责文件操作、代码搜索、执行终端、网络搜索等功能。不要让代码开发团队干除了写代码以外的任何事情！
+    5. 你的指令必须是没有歧义的！不要让开发团队猜你的意思！
+    6. 我们的预算非常有限！你的计划中不要包含重复的和不必要的步骤！
+    7. 你必须谨慎修改、删除文件，因为这些操作都是不可逆的！
+    8. 你返回的计划必须以JSON格式输出，包含steps字段，steps字段是一个数组，数组中每个元素是一个字符串，表示一个步骤。
     """
     if not model:
         model = initialize_plan_model()
@@ -116,18 +118,20 @@ async def initialize_replan_agent(model, tools=[]):
 
     注意！
     1. 当用户使用系统字眼时，除非明确告诉你分析操作系统，否侧你默认分析当前文件夹。
-    2. 你必须知道执行你的计划的是一个支持文件操作、代码搜索、终端命令执行、网络搜索等功能的开发团队！请不要让他们执行超出他们能力范围的命令！
-    3. 开发团队不能胜任信息总结的任务！请不要把信息总结作为步骤加入到计划中！
-    4. 你的指令必须是没有歧义的！不要让开发团队猜你的意思！
-    5. 我们的预算非常有限！你的计划中不要包含重复的和不必要的步骤！
-    6. 你必须谨慎修改、删除文件，因为这些操作都是不可逆的！
-    7. 你不能删除或修改计划中已经存在的步骤！只能在已有计划基础上补充新的步骤！
-    8. 你不允许将已经执行过的步骤补充进计划！
-    9. 确保计划中的每一步都能够得到所有需要的信息。
-    10. 确保计划的最后一步输出的是对用户问题的最终答案。
-    11. 如果用户让你形成文件，你必须形成文件，不能只生成文本。
-    12. 计划请以JSON格式输出，包含action字段，action字段应该包含steps字段，steps字段类型List[str]！
-    13. 答案请以JSON格式输出，包含action字段，action字段应该包含response字段，response字段类型str！
+    2. 有两个团队执行你的计划，一个是日常助手团队，一个是代码开发团队。
+    3. 日常助手团队支持文件操作、代码搜索、终端命令执行、网络搜索等功能。但是他们不负责写代码！日常助手团队可以帮助你分析项目，以及测试项目。
+    4. 代码开发团队只负责写代码，不负责文件操作、代码搜索、执行终端、网络搜索等功能。不要让代码开发团队干除了写代码以外的任何事情！
+    5. 开发团队不能胜任信息总结的任务！请不要把信息总结作为步骤加入到计划中！
+    6. 你的指令必须是没有歧义的！不要让开发团队猜你的意思！
+    7. 我们的预算非常有限！你的计划中不要包含重复的和不必要的步骤！
+    8. 你必须谨慎修改、删除文件，因为这些操作都是不可逆的！
+    9. 你不能删除或修改计划中已经存在的步骤！只能在已有计划基础上补充新的步骤！
+    10. 你不允许将已经执行过的步骤补充进计划！你不允许将已经执行过的步骤补充进计划！你不允许将已经执行过的步骤补充进计划！你不允许将已经执行过的步骤补充进计划！你不允许将已经执行过的步骤补充进计划！你不允许将已经执行过的步骤补充进计划！
+    11. 确保计划中的每一步都能够得到所有需要的信息。
+    12. 确保计划的最后一步输出的是对用户问题的最终答案。
+    13. 如果用户让你形成文件，你必须形成文件，不能只生成文本。
+    14. 计划请以JSON格式输出，包含action字段，action字段应该包含steps字段，steps字段类型List[str]！
+    15. 答案请以JSON格式输出，包含action字段，action字段应该包含response字段，response字段类型str！
     """
     if not model:
         model = initialize_plan_model()
@@ -156,6 +160,8 @@ async def initialize_normal_execute_agent(model, tools=[]):
     3. 你输出的代码中不准含有emoji！
     4. 你必须默认在所有的任务都是在当前这个目录下执行的！当然也包括这个目录的子目录！
     5. 删除文件、修改文件是不可逆的操作！必须谨慎使用！
+    6. 你需要将你的实现结果更新到development_log.md文件中，更新到development_log.md文件中的内容必须是具体到如何思考的和如何实现的！
+    7. 在你尝试写内容进development_log.md文件前，你必须先检查文件是否存在，如果文件不存在，则创建文件，如果文件存在，则更新文件内容而不要直接覆盖！
     """
     if not model:
         model = initialize_analysis_execute_model()
@@ -166,46 +172,6 @@ async def initialize_normal_execute_agent(model, tools=[]):
         tools=tools,
         middleware=middlewares,
     ), "normal_execute_agent")
-
-
-# async def initialize_recommend_agent(model, tools=[]):
-#     system_prompt = """
-#     你是一名资深技术架构师，擅长把模糊需求拆成可落地的技术方案。
-
-#     我需要你按照以下步骤进行工作，并按顺序输出：
-#     1. 分析当前项目，理解完成任务需要的依赖以及项目的技术栈
-#     2. 用一句话概括的核心目标
-#     3. 列出 3–5 个关键子任务，并为每个子任务给出 1–2 句实现思路
-#     4. 推荐技术栈，并说明理由
-#     5. 输出一份伪代码或接口定义，不超过 20 行，主要用于说明实现思路
-#     6. 分析项目结构，确认新开发的功能应该放在哪个目录下，或是创建新的目录。尽量在已有目录下开发新功能。
-
-#     注意！
-#     1. 删除文件、修改文件是不可逆的操作！必须谨慎使用！
-#     2. 你应该确保引用依赖时的路径问题！否则项目将会失败！
-#     """
-
-#     return (create_agent(
-#         model=model, system_prompt=system_prompt, tools=tools, middleware=middlewares
-#     ), "recommend_agent")
-
-# async def initialize_recommend_check_agent(model, tools=[]):
-#     detailed_prompt = ChatPromptTemplate.from_messages(
-#         [
-#             (
-#                 "system",
-#                 f"""
-#                 你是一名代码质量与需求澄清专家。请对上一步的方案做以下动作。
-#                 - 逐条检查目标、子任务、技术栈、伪代码是否存在歧义、遗漏或风险
-#                 - 针对每处问题，提出 1 个澄清问题或改进建议；
-#                 - 把补充后的最终需求写成一段无歧义的自然语言，作为下一步的输入
-#                 """,
-#             ),
-#             ("user", "{input}"),
-#         ]
-#     )
-
-#     return (detailed_prompt | model, "recommend_check_agent")
 
 
 async def initialize_code_agent(model, tools=[]):
@@ -227,6 +193,8 @@ async def initialize_code_agent(model, tools=[]):
     3. 你输出的代码中不准含有emoji！
     4. 你写完代码后必须保证 **每一行代码** 都没有逻辑问题和语法问题！
     5. 除了测试用脚本，你必须谨慎删除、修改任何文件！
+    6. 你需要将你的实现结果更新到development_log.md文件中，更新到development_log.md文件中的内容必须是具体到如何思考的和如何实现的！
+    7. 在你尝试写内容进development_log.md文件前，你必须先检查文件是否存在，如果文件不存在，则创建文件，如果文件存在，则更新文件内容而不要直接覆盖！
     """
 
     return (create_agent(
@@ -315,8 +283,6 @@ async def initial_agent(tools):
         initialize_plan_agent(model_map["plan_model"]),
         initialize_replan_agent(model_map["plan_model"]),
         initialize_normal_execute_agent(model_map["analysis_model"], tools),
-        # initialize_recommend_agent(model_map["plan_model"], tools),
-        # initialize_recommend_check_agent(model_map["analysis_model"]),
         initialize_code_agent(model_map["code_model"], tools),
         initialize_assistant_choose_agent(model_map["plan_model"]),
         initialize_summary_agent(model_map["summary_model"])
@@ -334,12 +300,6 @@ async def initial_agent(tools):
         elif result[1] == "normal_execute_agent":
             global normal_execute_agent
             normal_execute_agent = result[0]
-        # elif result[1] == "recommend_agent":
-            # global recommend_agent
-            # recommend_agent = result[0]
-        # elif result[1] == "recommend_check_agent":
-            # global recommend_check_agent
-            # recommend_check_agent = result[0]
         elif result[1] == "code_agent":
             global code_agent
             code_agent = result[0]
