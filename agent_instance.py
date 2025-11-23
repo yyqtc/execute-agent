@@ -50,7 +50,7 @@ async def initialize_code_execute_model():
             model=config.get("CODE_LLM_MODEL", "qwen-plus"),
             openai_api_key=config["LLM_API_KEY"],
             openai_api_base=config["LLM_API_BASE"],
-            temperature=0.7,
+            temperature=0.2,
         ), "code_model")
     except Exception as e:
         logger.error(f"错误: 执行用模型 初始化失败: {e}")
@@ -158,7 +158,7 @@ async def initialize_normal_execute_agent(model, tools=[]):
     5. 删除文件、修改文件是不可逆的操作！必须谨慎使用！
     """
     if not model:
-        model = initialize_execute_model()
+        model = initialize_analysis_execute_model()
 
     return (create_agent(
         model=model,
@@ -168,44 +168,44 @@ async def initialize_normal_execute_agent(model, tools=[]):
     ), "normal_execute_agent")
 
 
-async def initialize_recommend_agent(model, tools=[]):
-    system_prompt = """
-    你是一名资深技术架构师，擅长把模糊需求拆成可落地的技术方案。
+# async def initialize_recommend_agent(model, tools=[]):
+#     system_prompt = """
+#     你是一名资深技术架构师，擅长把模糊需求拆成可落地的技术方案。
 
-    我需要你按照以下步骤进行工作，并按顺序输出：
-    1. 分析当前项目，理解完成任务需要的依赖以及项目的技术栈
-    2. 用一句话概括的核心目标
-    3. 列出 3–5 个关键子任务，并为每个子任务给出 1–2 句实现思路
-    4. 推荐技术栈，并说明理由
-    5. 输出一份伪代码或接口定义，不超过 20 行，主要用于说明实现思路
-    6. 分析项目结构，确认新开发的功能应该放在哪个目录下，或是创建新的目录。尽量在已有目录下开发新功能。
+#     我需要你按照以下步骤进行工作，并按顺序输出：
+#     1. 分析当前项目，理解完成任务需要的依赖以及项目的技术栈
+#     2. 用一句话概括的核心目标
+#     3. 列出 3–5 个关键子任务，并为每个子任务给出 1–2 句实现思路
+#     4. 推荐技术栈，并说明理由
+#     5. 输出一份伪代码或接口定义，不超过 20 行，主要用于说明实现思路
+#     6. 分析项目结构，确认新开发的功能应该放在哪个目录下，或是创建新的目录。尽量在已有目录下开发新功能。
 
-    注意！
-    1. 删除文件、修改文件是不可逆的操作！必须谨慎使用！
-    2. 你应该确保引用依赖时的路径问题！否则项目将会失败！
-    """
+#     注意！
+#     1. 删除文件、修改文件是不可逆的操作！必须谨慎使用！
+#     2. 你应该确保引用依赖时的路径问题！否则项目将会失败！
+#     """
 
-    return (create_agent(
-        model=model, system_prompt=system_prompt, tools=tools, middleware=middlewares
-    ), "recommend_agent")
+#     return (create_agent(
+#         model=model, system_prompt=system_prompt, tools=tools, middleware=middlewares
+#     ), "recommend_agent")
 
-async def initialize_recommend_check_agent(model, tools=[]):
-    detailed_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                f"""
-                你是一名代码质量与需求澄清专家。请对上一步的方案做以下动作。
-                - 逐条检查目标、子任务、技术栈、伪代码是否存在歧义、遗漏或风险
-                - 针对每处问题，提出 1 个澄清问题或改进建议；
-                - 把补充后的最终需求写成一段无歧义的自然语言，作为下一步的输入
-                """,
-            ),
-            ("user", "{input}"),
-        ]
-    )
+# async def initialize_recommend_check_agent(model, tools=[]):
+#     detailed_prompt = ChatPromptTemplate.from_messages(
+#         [
+#             (
+#                 "system",
+#                 f"""
+#                 你是一名代码质量与需求澄清专家。请对上一步的方案做以下动作。
+#                 - 逐条检查目标、子任务、技术栈、伪代码是否存在歧义、遗漏或风险
+#                 - 针对每处问题，提出 1 个澄清问题或改进建议；
+#                 - 把补充后的最终需求写成一段无歧义的自然语言，作为下一步的输入
+#                 """,
+#             ),
+#             ("user", "{input}"),
+#         ]
+#     )
 
-    return (detailed_prompt | model, "recommend_check_agent")
+#     return (detailed_prompt | model, "recommend_check_agent")
 
 
 async def initialize_code_agent(model, tools=[]):
@@ -213,7 +213,7 @@ async def initialize_code_agent(model, tools=[]):
     初始化智能体并返回 agent 实例
     """
     if not model:
-        model = initialize_execute_model()
+        model = initialize_code_execute_model()
 
     system_prompt = """
     你是一个非常专业的全栈开发工程师，严格按照最终需求生成可运行代码。你可以使用能力来完成任务。要求：
@@ -315,8 +315,8 @@ async def initial_agent(tools):
         initialize_plan_agent(model_map["plan_model"]),
         initialize_replan_agent(model_map["plan_model"]),
         initialize_normal_execute_agent(model_map["analysis_model"], tools),
-        initialize_recommend_agent(model_map["plan_model"], tools),
-        initialize_recommend_check_agent(model_map["analysis_model"]),
+        # initialize_recommend_agent(model_map["plan_model"], tools),
+        # initialize_recommend_check_agent(model_map["analysis_model"]),
         initialize_code_agent(model_map["code_model"], tools),
         initialize_assistant_choose_agent(model_map["plan_model"]),
         initialize_summary_agent(model_map["summary_model"])
@@ -334,12 +334,12 @@ async def initial_agent(tools):
         elif result[1] == "normal_execute_agent":
             global normal_execute_agent
             normal_execute_agent = result[0]
-        elif result[1] == "recommend_agent":
-            global recommend_agent
-            recommend_agent = result[0]
-        elif result[1] == "recommend_check_agent":
-            global recommend_check_agent
-            recommend_check_agent = result[0]
+        # elif result[1] == "recommend_agent":
+            # global recommend_agent
+            # recommend_agent = result[0]
+        # elif result[1] == "recommend_check_agent":
+            # global recommend_check_agent
+            # recommend_check_agent = result[0]
         elif result[1] == "code_agent":
             global code_agent
             code_agent = result[0]

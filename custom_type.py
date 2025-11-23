@@ -17,6 +17,7 @@ class PlanExecute(TypedDict):
     past_steps: Annotated[List[str], add]
     response: str
     index: int
+    workspace: str
     
 
 

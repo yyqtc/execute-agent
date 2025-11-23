@@ -1,13 +1,10 @@
-from langchain.agents.middleware import before_model, after_model
+from langchain.agents.middleware import before_model, after_model, SummarizationMiddleware
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from langchain.agents import AgentState
 from langgraph.runtime import Runtime
-from typing import Any, Dict, Optional
+from load_config import config
 
 import threading
-import os
-import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -106,4 +103,16 @@ def cleanup_file_writer_middleware(state: AgentState, runtime: Runtime) -> Agent
     return state
 
 
-middlewares = [inject_file_writer_middleware, cleanup_file_writer_middleware]
+middlewares = [
+    inject_file_writer_middleware, 
+    cleanup_file_writer_middleware,
+    SummarizationMiddleware(
+        model=ChatOpenAI(
+            model=config["SUMMARY_LLM_MODEL"],
+            openai_api_key=config["LLM_API_KEY"],
+            openai_api_base=config["LLM_API_BASE"],
+            temperature=0.3,
+        ),
+        max_tokens_before_summary=config["SUMMARY_MAX_TOKENS"]
+    )
+]
