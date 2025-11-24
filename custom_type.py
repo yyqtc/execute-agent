@@ -12,14 +12,13 @@ from operator import add
 # PlanExecute不需要校验
 class PlanExecute(TypedDict):
     input: str
-    plan: List[str]
+    plan: List[Union[str, List[str]]]
     past_achievement: List[Tuple]
     past_steps: Annotated[List[str], add]
     response: str
     index: int
     workspace: str
     
-
 
 class Plan(BaseModel):
     steps: List[str] = Field(descriptions="将要执行的步骤，确保步骤按照先后顺序排序")

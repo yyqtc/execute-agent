@@ -1,6 +1,8 @@
 from custom_type import PlanExecute
 from pathlib import Path
+from typing import List, Union
 
+import re
 import os
 import json
 import logging
@@ -162,6 +164,63 @@ def todo_write(merge: bool, todos: list) -> str:
         return f"错误: 保存任务列表时发生未知错误。错误: {str(e)}"
 
 
+def parse_parallel_tasks(steps: List[str]) -> List[Union[str, List[str]]]:
+    """
+    将带 [PARALLEL-X] 标记的任务列表转换为可执行的结构
+    
+    输入：
+    [
+        "[PARALLEL-1] 任务1",
+        "[PARALLEL-2] 任务A",
+        "[PARALLEL-2] 任务B",
+        "[PARALLEL-3] 任务C",
+        "[PARALLEL-4] 任务2"
+    ]
+    
+    输出：
+    [
+        ["任务1"],
+        ["任务A", "任务B"],  # 并行组1
+        ["任务C"], # 并行组2
+        ["任务2"]
+    ]
+    """
+    import re
+    
+    result = []
+    parallel_groups = {}
+    
+    for step in steps:
+        match = re.match(r'\[PARALLEL-(\d+)\]\s*(.+)', step)
+        
+        if match:
+            group_id = match.group(1)
+            task_desc = match.group(2)
+            
+            if group_id not in parallel_groups:
+                parallel_groups[group_id] = []
+            parallel_groups[group_id].append(task_desc)
+        else:
+            # 先清空之前的并行组
+            for gid in sorted(parallel_groups.keys()):
+                tasks = parallel_groups[gid]
+                if len(tasks) == 1:
+                    result.append([tasks[0]])
+                else:
+                    result.append(tasks)
+            parallel_groups.clear()
+            
+            # 添加当前任务
+            result.append([step])
+    
+    # 处理最后的并行组
+    for gid in sorted(parallel_groups.keys()):
+        tasks = parallel_groups[gid]
+        result.append(tasks)
+    
+    return result
+
+
 async def plan_node(state: PlanExecute) -> PlanExecute:
     """
     计划节点
@@ -179,7 +238,8 @@ async def plan_node(state: PlanExecute) -> PlanExecute:
     if result is None or len(result) == 0:
         return {"response": "计划生成失败，返回为空"}
     else:
-        plan_table = [{"desc": step, "status": "pending"} for step in result]
+        plan_table = [{"desc": re.match(r'\[PARALLEL-(\d+)\]\s*(.+)', step).group(2), "status": "pending"} for step in result]
         todo_write(False, plan_table)
 
+        result = parse_parallel_tasks(result)
         return {"plan": result}

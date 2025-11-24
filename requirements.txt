@@ -11,6 +11,9 @@ sentence-transformers>=2.2.0
 faiss-cpu>=1.7.0
 numpy>=1.21.0
 
+# 支持嵌套事件循环（用于在异步环境中调用同步文件操作）
+nest-asyncio>=1.5.0
+
 # 开发依赖（可选）
 pylint>=2.15.0
 flake8>=6.0.0
