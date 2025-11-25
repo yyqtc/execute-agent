@@ -1,5 +1,7 @@
 from pathlib import Path
 from typing import Optional
+from tools.gitignore import load_gitignore_patterns, is_path_ignored, get_project_root
+
 import os
 import logging
 
@@ -395,7 +397,7 @@ def delete_file(file_path: str) -> str:
         - 检查文件存在性和权限
         - 确保路径在当前项目目录内，不允许删除父目录中的文件
     """
-    from .command import CRITICAL_PATH_BLACKLIST, ALLOWED_DELETE_DIRECTORIES
+    from tools.command import CRITICAL_PATH_BLACKLIST, ALLOWED_DELETE_DIRECTORIES
 
     try:
         # 将路径转换为 Path 对象
