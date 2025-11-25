@@ -272,8 +272,12 @@ async def code_execute_node(state: PlanExecute, enable_lock: bool = False) -> Pl
         response = messages[-1].content
         await refresh_todo_list(state["index"], "done", response, task_id=f"code_execute_{state['index']}", enable_lock=enable_lock)
         
-        async with manager.write_lock(os.path.join(state["workspace"], "development_log.md"), f"code_execute_{state['index']}", timeout=10):
-            await asyncio.to_thread(write_development_log, response)
+        if enable_lock:
+            manager = get_file_manager()
+            async with manager.write_lock(os.path.join(state["workspace"], "development_log.md"), f"code_execute_{state['index']}", timeout=10):
+                await asyncio.to_thread(write_development_log, response)
+        else:
+            write_development_log(response)
 
         return {
             "past_achievement": [(task, response)],
