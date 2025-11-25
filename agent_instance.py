@@ -20,7 +20,7 @@ async def initialize_plan_model():
             model=config.get("PLAN_LLM_MODEL", "qwen-plus"),
             openai_api_key=config["LLM_API_KEY"],
             openai_api_base=config["LLM_API_BASE"],
-            temperature=0.2,
+            temperature=0.3,
         ), "plan_model")
     except Exception as e:
         logger.error(f"错误: 计划用模型 初始化失败: {e}")
@@ -284,13 +284,14 @@ async def initialize_normal_execute_agent(model, tools=[]):
     你是一个非常专业的助手。你可以使用能力来完成任务。
 
     注意！
-    1. 你必须在任务结束后，删除所有临时创建的文件！比如说测试用脚本！
+    1. 你必须在任务结束后，删除所有创建的空文件夹和测试脚本！比如说测试用脚本！
     2. 你输出的代码中必须抑制除了异常信息、错误信息以及结果信息以外的所有打印！
     3. 你输出的代码中不准含有emoji！
     4. 你必须默认在所有的任务都是在当前这个目录下执行的！当然也包括这个目录的子目录！
     5. 删除文件、修改文件是不可逆的操作！必须谨慎使用！
-    6. 你需要将你的实现结果更新到development_log.md文件中，更新到development_log.md文件中的内容必须是具体到如何思考的和如何实现的！
-    7. 在你尝试写内容进development_log.md文件前，你必须先检查文件是否存在，如果文件不存在，则创建文件，如果文件存在，则更新文件内容而不要直接覆盖！
+    6. 任务中让你分析代码，优先使用python的ast进行分析！只有明确告诉你需要测试代码是否存在bug时，才使用read_lints方法！
+    7. 你需要将你的实现结果更新到development_log.md文件中，更新到development_log.md文件中的内容必须是具体到如何思考的和如何实现的！
+    8. 在你尝试写内容进development_log.md文件前，你必须先检查文件是否存在，如果文件不存在，则创建文件，如果文件存在，则更新文件内容而不要直接覆盖！
     """
     if not model:
         model = initialize_analysis_execute_model()
