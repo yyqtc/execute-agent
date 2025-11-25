@@ -246,6 +246,7 @@ async def code_execute_node(state: PlanExecute, enable_lock: bool = False) -> Pl
 
     logger.info("执行任务: %s", detailed_task)
 
+    manager = None
     if enable_lock:
         manager = get_file_manager()
         set_task_context(f"code_execute_{state['index']}", manager)
@@ -273,7 +274,6 @@ async def code_execute_node(state: PlanExecute, enable_lock: bool = False) -> Pl
         await refresh_todo_list(state["index"], "done", response, task_id=f"code_execute_{state['index']}", enable_lock=enable_lock)
         
         if enable_lock:
-            manager = get_file_manager()
             async with manager.write_lock(os.path.join(state["workspace"], "development_log.md"), f"code_execute_{state['index']}", timeout=10):
                 await asyncio.to_thread(write_development_log, response)
         else:
