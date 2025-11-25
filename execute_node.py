@@ -107,7 +107,10 @@ async def normal_execute_node(state: PlanExecute, enable_lock: bool = False) -> 
     from agent_instance import normal_execute_agent, summary_agent
     
     if not state["plan"] or not len(state["plan"]):
-        return {"response": "没有计划，无需执行"}
+        return {
+            "response": "没有计划，无需执行",
+            "past_steps": []
+        }
 
     task = state["plan"].pop(0)
 
@@ -122,7 +125,10 @@ async def normal_execute_node(state: PlanExecute, enable_lock: bool = False) -> 
         if len(past_achievement_content) > config["SUMMARY_THRESHOLD"]:
             if summary_agent is None:
                 logger.error("summary_agent 为 None，无法执行总结操作")
-                return {"response": "model 未初始化，无法执行总结操作"}
+                return {
+                    "response": "model 未初始化，无法执行总结操作",
+                    "past_steps": [task]
+                }
             past_achievement_content_wrapper = await summary_agent.ainvoke(
                 {"input": past_achievement_content}
             )
@@ -152,7 +158,10 @@ async def normal_execute_node(state: PlanExecute, enable_lock: bool = False) -> 
         if normal_execute_agent is None:
             logger.error("normal_execute_agent 未初始化")
             await refresh_todo_list(state["index"], "fail", "执行智能体初始化失败", task_id=f"normal_execute_{state['index']}", enable_lock=enable_lock)
-            return {"response": "执行智能体初始化失败"}
+            return {
+                "response": "执行智能体初始化失败",
+                "past_steps": [task]
+            }
 
         result = await normal_execute_agent.ainvoke(
             {"messages": [("user", formatted_task)]},
@@ -162,7 +171,10 @@ async def normal_execute_node(state: PlanExecute, enable_lock: bool = False) -> 
         messages = result.get("messages", None)
         if messages is None:
             await refresh_todo_list(state["index"], "fail", "执行任务完成，返回为空", task_id=f"normal_execute_{state['index']}", enable_lock=enable_lock)
-            return {"response": "执行任务完成，返回为空"}
+            return {
+                "response": "执行任务完成，返回为空",
+                "past_steps": [task]
+            }
 
         response = messages[-1].content
         await refresh_todo_list(state["index"], "done", response, task_id=f"normal_execute_{state['index']}", enable_lock=enable_lock)
@@ -174,7 +186,10 @@ async def normal_execute_node(state: PlanExecute, enable_lock: bool = False) -> 
     except Exception as e:
         logging.error(f"执行任务失败: {str(e)}")
         await refresh_todo_list(state["index"], "fail", f"执行任务失败: {str(e)}", task_id=f"normal_execute_{state['index']}", enable_lock=enable_lock)
-        return {"response": f"执行任务失败: {str(e)}"}
+        return {
+            "response": f"执行任务失败: {str(e)}",
+            "past_steps": [task]
+        }
 
     finally:
         if enable_lock:
@@ -190,7 +205,10 @@ async def code_execute_node(state: PlanExecute, enable_lock: bool = False) -> Pl
     from agent_instance import code_agent
     
     if not state["plan"] or not len(state["plan"]):
-        return {"response": "没有计划，无需执行"}
+        return {
+            "response": "没有计划，无需执行",
+            "past_steps": []
+        }
 
     task = state["plan"].pop(0)
 
@@ -246,7 +264,10 @@ async def code_execute_node(state: PlanExecute, enable_lock: bool = False) -> Pl
         messages = result.get("messages", None)
         if messages is None:
             await refresh_todo_list(state["index"], "fail", "执行任务完成，返回为空", task_id=f"code_execute_{state['index']}", enable_lock=enable_lock)
-            return {"response": "执行任务完成，返回为空"}
+            return {
+                "response": "执行任务完成，返回为空",
+                "past_steps": [task]
+            }
 
         response = messages[-1].content
         await refresh_todo_list(state["index"], "done", response, task_id=f"code_execute_{state['index']}", enable_lock=enable_lock)
@@ -262,7 +283,10 @@ async def code_execute_node(state: PlanExecute, enable_lock: bool = False) -> Pl
     except Exception as e:
         logging.error(f"执行任务失败: {str(e)}")
         await refresh_todo_list(state["index"], "fail", f"执行任务失败: {str(e)}", task_id=f"code_execute_{state['index']}", enable_lock=enable_lock)
-        return {"response": f"执行任务失败: {str(e)}"}
+        return {
+            "response": f"执行任务失败: {str(e)}",
+            "past_steps": [task]
+        }
 
     finally:
         if enable_lock:
@@ -311,7 +335,17 @@ async def execute_node(state: PlanExecute) -> PlanExecute:
     
     for result in results:
         if "response" in result:
-            response_state["response"] += f"\n\n{result['response']}"
+            task_wrapper = result.get("past_steps", [])
+
+            if len(task) > 0:
+                task = task_wrapper[0]
+            else:
+                task = ""
+                task_wrapper = ["任务为空，无需执行"]
+            
+            response_state["past_achievement"].extend([(task, result.get("response", ""))])
+            response_state["past_steps"].extend(task_wrapper)
+            continue
         
         response_state["past_achievement"].extend(result.get("past_achievement", []))
         response_state["past_steps"].extend(result.get("past_steps", []))
