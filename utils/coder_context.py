@@ -15,7 +15,7 @@ async def gather_project_structure(dir_path: str, layer: int = 5):
     # 定义要忽略的目录和文件（减少 Token 消耗）
     IGNORE_DIRS = {
         '.git', '__pycache__', 'node_modules', 'venv', '.idea', '.vscode', 
-        'dist', 'build', 'coverage', '.pytest_cache'
+        'dist', 'build', 'coverage', '.pytest_cache', '.semantic_cache', '.mypy_cache'
     }
 
     IGNORE_FILES = {

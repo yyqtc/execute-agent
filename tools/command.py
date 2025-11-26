@@ -51,6 +51,25 @@ DANGEROUS_COMMANDS = {
     ".",  # 加载脚本
 }
 
+# Git 需要人工参与的子命令黑名单
+GIT_INTERACTIVE_SUBCOMMANDS = {
+    "commit",  # 提交命令（可能需要输入提交信息或确认）
+    "push",  # 推送命令（可能需要输入凭据或确认）
+    "pull",  # 拉取命令（可能需要解决冲突）
+    "merge",  # 合并命令（可能需要解决冲突）
+    "rebase",  # 变基命令（可能需要解决冲突或交互式操作）
+    "cherry-pick",  # 拣选命令（可能需要解决冲突）
+    "revert",  # 撤销命令（可能需要确认）
+    "reset",  # 重置命令（危险操作，需要确认）
+    "clean",  # 清理未跟踪文件（需要确认）
+    "stash",  # 暂存命令（通常需要人工确认）
+    "tag",  # 标签命令（创建/删除标签需要确认）
+    "branch",  # 分支命令（删除分支需要确认）
+    "remote",  # 远程仓库命令（修改远程配置需要确认）
+    "config",  # 配置命令（修改配置需要确认）
+    "submodule",  # 子模块命令（子模块操作可能需要确认）
+}
+
 # 命令白名单（如果设置了白名单，只允许执行白名单中的命令）
 # 默认情况下为空，表示不启用白名单机制
 COMMAND_WHITELIST = set()  # 可以扩展为 {'ls', 'cat', 'grep', 'find', ...}
@@ -135,6 +154,12 @@ def _is_safe_command(command: str) -> tuple[bool, str]:
     # 检查命令名是否在黑名单中
     if cmd_name in DANGEROUS_COMMANDS:
         return False, f"错误: 禁止执行危险命令 '{cmd_name}'。该命令可能对系统造成损害。"
+    
+    # 检查 Git 需要人工参与的子命令
+    if cmd_name == "git" and len(parts) > 1:
+        git_subcommand = parts[1].lower()
+        if git_subcommand in GIT_INTERACTIVE_SUBCOMMANDS:
+            return False, f"错误: 禁止执行需要人工参与的 Git 命令 'git {git_subcommand}'。该命令可能需要用户输入、确认或解决冲突。"
 
     # 检查命令中是否包含危险的操作符或模式
     # 禁止命令链操作符（可能用于绕过安全检查）
