@@ -228,9 +228,11 @@ async def replan_node(state: PlanExecute) -> PlanExecute:
     past_steps = state.get("past_steps", [])
     past_steps_content = "\n".join([f"- {step}" for step in past_steps])
 
+    todo = state.get("input", "")
+
     user_prompt = f"""
-    我们的客户的需求是（注意！你不能做任何偏离客户需求的指示！）：
-    {state["input"]}
+    我们的客户的需求是（你不能因为开发团队已经完成的成果而忽视客户没有实现的需求！）：
+    {todo}
     
     我们最近一次计划是：
     {plan_list}
@@ -242,9 +244,6 @@ async def replan_node(state: PlanExecute) -> PlanExecute:
     {past_steps_content}
     
     根据以上信息更新我们的计划。如果你认为不需要执行更多步骤，你可以直接输出对用户问题的最终答案。否则你需要在计划中补充更多步骤。
-
-    注意！
-    1. 你不准把已经执行过的步骤补充进计划！
     """
 
     if agent is None:
