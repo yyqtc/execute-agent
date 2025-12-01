@@ -144,7 +144,7 @@ def trim_long_messages_middleware(state: AgentState, runtime: Runtime) -> AgentS
 middlewares = [
     inject_file_writer_middleware, 
     cleanup_file_writer_middleware,
-    trim_long_messages_middleware,
+    # trim_long_messages_middleware,
     SummarizationMiddleware(
         model=ChatOpenAI(
             model=config["SUMMARY_LLM_MODEL"],
@@ -155,5 +155,4 @@ middlewares = [
         max_tokens_before_summary=config["SUMMARY_THRESHOLD"],
         summary_prompt=f"请把内容长度适当总结，不要遗漏重要消息（未完成的功能、项目的结构、项目的依赖、项目中未解决的错误）的前提下，适当压缩其他信息，把内容长度控制在{config['SUMMARY_MAX_LENGTH']}个token以内。"
     ),
-
 ]
