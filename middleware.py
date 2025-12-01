@@ -1,16 +1,18 @@
-from langchain.agents.middleware import before_model, after_model
+from langchain.agents.middleware import before_model, after_model, SummarizationMiddleware
+from langchain_core.messages.utils import trim_messages
+from langchain_core.messages import BaseMessage
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from langchain.agents import AgentState
 from langgraph.runtime import Runtime
-from typing import Any, Dict, Optional
+from load_config import config
+from typing import List
 
 import threading
-import os
-import json
 import logging
+import tiktoken
 
 logger = logging.getLogger(__name__)
+enc = tiktoken.get_encoding("cl100k_base")
 
 # 线程本地存储，用于存储每个线程的 SafeFileWriter 实例
 _thread_local = threading.local()
@@ -33,6 +35,19 @@ def set_file_writer(file_writer):
         file_writer: SafeFileWriter 实例
     """
     _thread_local.file_writer = file_writer
+
+
+def get_token_count(messages: List[BaseMessage]) -> int:
+    total_tokens = 0
+    for message in messages:
+        message_str = f"{message.type}\n{message.content}"
+        total_tokens += len(enc.encode(message_str))
+        if hasattr(message, "name") and message.name:
+            total_tokens += len(enc.encode(message.name))
+
+    total_tokens += len(messages)
+
+    return total_tokens
 
 
 @before_model
@@ -106,4 +121,38 @@ def cleanup_file_writer_middleware(state: AgentState, runtime: Runtime) -> Agent
     return state
 
 
-middlewares = [inject_file_writer_middleware, cleanup_file_writer_middleware]
+@before_model
+def trim_long_messages_middleware(state: AgentState, runtime: Runtime) -> AgentState:
+    """
+    中间件函数：在模型调用之前修剪过长消息
+    """
+    messages = state.get("messages", [])
+    trimmed = trim_messages(
+        messages,
+        token_counter=get_token_count,
+        strategy="last",  # 保留最后的消息
+        max_tokens=config["SUMMARY_THRESHOLD"],  # 设置为模型允许的最大值
+        start_on="human",
+        end_on=("human", "tool"),
+    )
+    if len(trimmed) < len(messages):
+        return {"messages": trimmed}
+    else:
+        return None
+
+
+middlewares = [
+    inject_file_writer_middleware, 
+    cleanup_file_writer_middleware,
+    # trim_long_messages_middleware,
+    SummarizationMiddleware(
+        model=ChatOpenAI(
+            model=config["SUMMARY_LLM_MODEL"],
+            openai_api_key=config["LLM_API_KEY"],
+            openai_api_base=config["LLM_API_BASE"],
+            temperature=0.3,
+        ),
+        max_tokens_before_summary=config["SUMMARY_THRESHOLD"],
+        summary_prompt=f"请把内容长度适当总结，不要遗漏重要消息（未完成的功能、项目的结构、项目的依赖、项目中未解决的错误）的前提下，适当压缩其他信息，把内容长度控制在{config['SUMMARY_MAX_LENGTH']}个token以内。"
+    ),
+]

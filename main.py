@@ -631,7 +631,7 @@ async def main():
     # 创建安全的文件写入器
     # print_mode 控制是否打印输出，force 控制是否强制写入文件
     # 两者可以同时生效：使用 --force 时既能打印输出，又能写入文件
-    print_mode = args.print
+    print_mode = args.print or args.output_format == "stream-json"
     file_writer = SafeFileWriter(print_mode, working_dir, args.force)
 
     # 将 file_writer 存储到线程本地存储中，以便中间件和工具函数可以访问

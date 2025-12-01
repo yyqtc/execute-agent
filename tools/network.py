@@ -37,7 +37,7 @@ def web_search(
             )
 
         # 构建请求
-        url = "https://api.bochaai.com/v1/web-search"
+        url = "https://api.bochaai.com/v1/ai-search"
         payload = {
             "query": query,
             "freshness": freshness,

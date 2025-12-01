@@ -2,8 +2,7 @@ from langgraph.graph import StateGraph, START, END
 from custom_type import PlanExecute
 from plan_node import plan_node
 from replan_node import replan_node
-from code_execute_node import execute_node as code_execute_node
-from normal_execute_node import execute_node as normal_execute_node
+from execute_node import execute_node
 from agent_instance import initial_agent
 from tools_registry import get_execute_tools
 
@@ -21,40 +20,19 @@ async def initialize_graph():
     agent = StateGraph(PlanExecute)
     agent.add_node("plan", plan_node)
     agent.add_node("replan", replan_node)
-    agent.add_node("code_execute", code_execute_node)
-    agent.add_node("normal_execute", normal_execute_node)
+    agent.add_node("execute", execute_node)
 
-    def _choose_execute_node(state: PlanExecute):
-        if "response" in state and state["response"]:
+    def _should_end(state: PlanExecute):
+        if "response" in state and state["response"].strip():
             return END
         else:
-            # 延迟导入避免循环导入
-            from agent_instance import assistant_choose_agent
-            if assistant_choose_agent is None:
-                logger.error("assistant_choose_agent 未初始化")
-                return "normal_execute"
-            result = assistant_choose_agent.invoke({"input": state["plan"][0]})
-            result = result.content
-            if result == "code_execute":
-                return "code_execute"
-            else:
-                return "normal_execute"
-
-
-    def _should_replan(state: PlanExecute):
-        if "response" in state and state["response"]:
-            return END
-        else:
-            return "replan"
+            return "execute"
 
     agent.add_edge(START, "plan")
+    agent.add_edge("plan", "execute")
+    agent.add_edge("execute", "replan")
     agent.add_conditional_edges(
-        "plan", _choose_execute_node, ["normal_execute", "code_execute", END]
-    )
-    agent.add_conditional_edges("code_execute", _should_replan, ["replan", END])
-    agent.add_conditional_edges("normal_execute", _should_replan, ["replan", END])
-    agent.add_conditional_edges(
-        "replan", _choose_execute_node, ["normal_execute", "code_execute", END]
+        "replan", _should_end, ["execute", END]
     )
 
     app = agent.compile()

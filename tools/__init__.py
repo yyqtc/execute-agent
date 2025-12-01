@@ -20,16 +20,21 @@ from .lint import read_lints
 # Import from search module
 from .search import search_files, grep, codebase_search
 
-# Import from file_operations module
-from .file_operations import (
+# Import from file_operations_with_lock module (智能锁管理版本)
+from .file_operations_with_lock import (
     read_file,
     write_file,
     write_file_tool,
     edit_file,
     delete_file,
     list_directory,
-    format_error,
+    set_task_context,
+    clear_task_context,
+    get_task_context,
 )
+
+# Import format_error from utils (工具函数)
+from utils.file_operations import format_error
 
 # Import from mcp module
 from .mcp import (
@@ -50,6 +55,16 @@ from .gitignore import (
 
 # Import from config module
 from .config import get_config
+
+# Import from utils.file_lock module
+from utils.file_lock import (
+    FileAccessManager,
+    get_file_manager,
+    reset_file_manager,
+)
+
+# Import from utils.command_parser module
+from utils.command_parser import CommandFileAnalyzer
 
 # Define __all__ to explicitly declare public API
 __all__ = [
@@ -73,6 +88,9 @@ __all__ = [
     "delete_file",
     "list_directory",
     "format_error",
+    "set_task_context",
+    "clear_task_context",
+    "get_task_context",
     # MCP module exports
     "create_langchain_mcp_client",
     "create_context7_mcp_client",
@@ -85,4 +103,10 @@ __all__ = [
     "get_project_root",
     # Config module exports
     "get_config",
+    # File lock module exports
+    "FileAccessManager",
+    "get_file_manager",
+    "reset_file_manager",
+    # Command parser module exports
+    "CommandFileAnalyzer",
 ]
