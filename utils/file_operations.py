@@ -34,7 +34,7 @@ def format_error(
 
 
 def _write_file_impl(
-    file_path: str, content: str, file_writer: Optional[object] = None
+    file_path: str, content: str, file_writer: Optional[object] = None, overwrite: bool = False
 ) -> str:
     """
     写入文件的内部实现函数
@@ -58,7 +58,10 @@ def _write_file_impl(
         if file_writer is not None and SafeFileWriter is not None:
             try:
                 # 使用 SafeFileWriter 的 write 方法（它会进行安全检查）
-                success = file_writer.write(file_path, content)
+                if overwrite:
+                    success = file_writer.write(file_path, content)
+                else:
+                    success = file_writer.append(file_path, content)
                 if success:
                     return f"成功写入文件: {file_path} (共 {len(content)} 字符)"
                 else:
@@ -109,8 +112,13 @@ def _write_file_impl(
 
         # 写入文件（使用 UTF-8 编码）
         try:
-            with open(resolved_path, "w", encoding="utf-8") as f:
-                f.write(content)
+            if overwrite:
+                with open(resolved_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+            else:
+                with open(resolved_path, "a", encoding="utf-8") as f:
+                    f.write(content)
+
             return f"成功写入文件: {resolved_path} (共 {len(content)} 字符)"
         except UnicodeEncodeError as e:
             return f"错误: 内容编码错误，无法使用 UTF-8 编码。路径: {resolved_path}, 错误: {str(e)}"
@@ -206,7 +214,7 @@ def read_file(
 
 
 def write_file(
-    file_path: str, content: str, file_writer: Optional[object] = None
+    file_path: str, content: str, file_writer: Optional[object] = None, overwrite: bool = False
 ) -> str:
     """
     写入文件内容，集成 SafeFileWriter
@@ -225,34 +233,7 @@ def write_file(
         - 处理路径不安全、写入失败、编码错误等异常
         - 确保所有路径操作在当前目录范围内，不对父目录进行写入操作
     """
-    return _write_file_impl(file_path, content, file_writer)
-
-
-def write_file_tool(file_path: str, content: str) -> str:
-    """
-    写入文件内容（LangChain 工具版本）
-
-    此函数作为 LangChain 工具使用，不支持传递 file_writer 对象参数。
-    通过中间件注入的 SafeFileWriter 实例会自动从线程本地存储中获取。
-
-    Args:
-        file_path: 文件路径（字符串）
-        content: 要写入的内容（字符串）
-
-    Returns:
-        操作结果消息字符串
-    """
-    # 尝试导入中间件函数（如果可用）
-    try:
-        from middleware import get_file_writer
-    except ImportError:
-        # 如果导入失败，定义一个默认函数返回 None
-        def get_file_writer():
-            return None
-
-    # 从线程本地存储中获取 file_writer（由中间件注入）
-    file_writer = get_file_writer()
-    return write_file(file_path, content, file_writer=file_writer)
+    return _write_file_impl(file_path, content, file_writer, overwrite)
 
 
 def edit_file(

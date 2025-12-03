@@ -91,6 +91,42 @@ class SafeFileWriter:
 
         return True
 
+    def append(self, file_path: str, content: str, force: bool = False) -> bool:
+        """
+        安全地写入文件
+        在 print 模式下只输出建议，不实际写入（除非 force=True）
+
+        Args:
+            file_path: 要写入的文件路径
+            content: 要写入的内容
+            force: 是否强制执行写入操作（默认为 False）
+                   当 force=True 时，即使在 print_mode 下也会实际写入文件
+
+        Returns:
+            bool: 是否成功写入文件
+        """
+        path = Path(file_path)
+
+        # 检查路径是否安全（无论是否在 print_mode 下都要检查）
+        if not self.is_safe_path(path):
+            raise ValueError(
+                f"错误: 不允许写入父目录。"
+                f"目标路径: {path.resolve()}, 当前目录: {self.current_dir}"
+            )
+
+        # 如果处于 print_mode 且未强制写入，则只输出建议
+        if self.print_mode and not (self.force or force):
+            return False
+
+        # 确保目录存在
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # 写入文件
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(content)
+
+        return True
+
 
 def parse_arguments():
     """

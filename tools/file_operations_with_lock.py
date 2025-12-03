@@ -149,13 +149,14 @@ async def _write_file_async_with_lock(
     content: str,
     task_id: str,
     manager: FileAccessManager,
+    overwrite: bool = False,
     file_writer: Optional[object] = None,
     lock_timeout: float = 10.0
 ):
     """异步写入文件（带锁，在线程池中执行I/O避免阻塞事件循环）"""
     async with manager.write_lock(file_path, task_id, timeout=lock_timeout):
         return await asyncio.to_thread(
-            _write_file_impl, file_path, content, file_writer
+            _write_file_impl, file_path, content, file_writer, overwrite
         )
 
 
@@ -236,10 +237,11 @@ def read_file(
 def write_file(
     file_path: str,
     content: str,
-    file_writer: Optional[object] = None
+    file_writer: Optional[object] = None,
+    overwrite: bool = False,
 ) -> str:
     """
-    智能文件写入（自动锁管理）
+    overwrite为True时，智能文件覆盖写入；overwrite为False时，智能文件追加写入（自动锁管理）
     
     单任务执行时：无锁，高性能
     并行执行时：自动使用写锁，独占访问
@@ -248,6 +250,7 @@ def write_file(
         file_path: 文件路径
         content: 要写入的内容
         file_writer: SafeFileWriter实例（可选）
+        overwrite: 是否覆盖文件（默认不覆盖）
         
     Returns:
         操作结果消息
@@ -256,14 +259,14 @@ def write_file(
     
     # 无锁快速路径
     if not lock_enabled or manager is None:
-        return _write_file_impl(file_path, content, file_writer)
+        return _write_file_impl(file_path, content, file_writer, overwrite)
     
     # 带锁路径
     logger.debug(f"[写锁] {task_id} 准备写入: {file_path}")
     try:
         result = _run_with_lock(
             _write_file_async_with_lock(
-                file_path, content, task_id, manager, file_writer
+                file_path, content, task_id, manager, overwrite, file_writer
             )
         )
         logger.debug(f"[写锁] {task_id} 完成写入: {file_path}")
