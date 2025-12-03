@@ -10,83 +10,83 @@ import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
+track = None
+
+project_root = Path(__file__).parent.resolve()
+todos_file = project_root / "data" / "todos.json"
+
+def check_permission_and_dir():
+    global track
+
+    # 安全检查：确保路径在项目根目录内
+    try:
+        if not todos_file.resolve().is_relative_to(project_root):
+            return f"错误: 不允许写入父目录。目标路径: {todos_file.resolve()}, 项目根目录: {project_root}"
+    
+    except (ValueError, RuntimeError):
+        return f"错误: 路径解析失败，可能不安全。目标路径: {todos_file}"
+
+    # 确保 data 目录存在
+    try:
+        todos_file.parent.mkdir(parents=True, exist_ok=True)
+    except PermissionError as e:
+        logging.error(f"权限不足，无法创建目录。路径: {project_root}, 错误: {str(e)}")
+        return f"错误: 权限不足，无法创建目录。路径: {project_root}, 错误: {str(e)}"
+    except Exception as e:
+        logging.error(f"创建目录失败。路径: {project_root}, 错误: {str(e)}")
+        return f"错误: 创建目录失败。路径: {project_root}, 错误: {str(e)}"
+
+
+def read_todo_list():
+    global track
+
+    if todos_file.exists():
+        try:
+            # 检查读取权限
+            if not os.access(todos_file, os.R_OK):
+                return f"错误: 没有读取权限。路径: {todos_file}"
+            with open(todos_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    track = json.loads(content)
+                    # 验证数据格式
+                    if not isinstance(track, list):
+                        track = []
+        except json.JSONDecodeError as e:
+            logging.error(f"JSON 格式错误，使用空列表。路径: {todos_file}, 错误: {str(e)}")
+            track = []
+        except IOError as e:
+            logging.error(f"读取文件失败。路径: {todos_file}, 错误: {str(e)}")
+            return f"错误: 读取文件失败。路径: {todos_file}, 错误: {str(e)}"
+        except Exception as e:
+            logging.error(f"读取任务列表时发生未知错误。路径: {todos_file}, 错误: {str(e)}")
+            return f"错误: 读取任务列表时发生未知错误。路径: {todos_file}, 错误: {str(e)}"
+
 
 async def refresh_todo_list(index: int, status: str, response: str = "", task_id: str = "", enable_lock: bool = False):
     try:
-        # 获取项目根目录
-        project_root = Path(__file__).parent.resolve()
-
-        # 构建文件路径
-        todos_file = project_root / "data" / "todos.json"
-
-        # 安全检查：确保路径在项目根目录内
-        try:
-            if not todos_file.resolve().is_relative_to(project_root):
-                return f"错误: 不允许写入父目录。目标路径: {todos_file.resolve()}, 项目根目录: {project_root}"
-        except (ValueError, RuntimeError):
-            return f"错误: 路径解析失败，可能不安全。目标路径: {todos_file}"
-
-        # 确保 data 目录存在
-        try:
-            todos_file.parent.mkdir(parents=True, exist_ok=True)
-        except PermissionError as e:
-            logging.error(
-                f"权限不足，无法创建目录。路径: {todos_file.parent}, 错误: {str(e)}"
-            )
-            return f"错误: 权限不足，无法创建目录。路径: {todos_file.parent}, 错误: {str(e)}"
-        except Exception as e:
-            logging.error(f"创建目录失败。路径: {todos_file.parent}, 错误: {str(e)}")
-            return f"错误: 创建目录失败。路径: {todos_file.parent}, 错误: {str(e)}"
-
         # 读取现有任务列表（如果文件存在）
-        existing_todos = []
-        if todos_file.exists():
-            try:
-                # 检查读取权限
-                if not os.access(todos_file, os.R_OK):
-                    return f"错误: 没有读取权限。路径: {todos_file}"
+        global track
 
-                # 读取文件内容
-                with open(todos_file, "r", encoding="utf-8") as f:
-                    content = f.read().strip()
-                    if content:
-                        existing_todos = json.loads(content)
-                        # 验证数据格式
-                        if not isinstance(existing_todos, list):
-                            existing_todos = []
-            except json.JSONDecodeError as e:
-                logging.error(
-                    f"JSON 格式错误，使用空列表。路径: {todos_file}, 错误: {str(e)}"
-                )
-                existing_todos = []
-            except IOError as e:
-                logging.error(f"读取文件失败。路径: {todos_file}, 错误: {str(e)}")
-                return f"错误: 读取文件失败。路径: {todos_file}, 错误: {str(e)}"
-            except Exception as e:
-                logging.error(
-                    f"读取任务列表时发生未知错误。路径: {todos_file}, 错误: {str(e)}"
-                )
-                return f"错误: 读取任务列表时发生未知错误。路径: {todos_file}, 错误: {str(e)}"
+        if track is None:
+            track = []
 
         def write_json_file(todo_file, todo):
             with open(todo_file, "w", encoding="utf-8") as f:
                 json.dump(todo, f, ensure_ascii=False, indent=2)
 
-            with open(todos_file, "w", encoding="utf-8") as f:
-                json.dump(existing_todos, f, ensure_ascii=False, indent=2)
-
-        if len(existing_todos) > 0 and index < len(existing_todos):
-            existing_todos[index]["status"] = status
+        if len(track) > 0 and index < len(track):
+            track[index]["status"] = status
             if response and len(response) > 0:
-                existing_todos[index]["response"] = response
+                track[index]["response"] = response
             if enable_lock:
                 manager = get_file_manager()
                 async with manager.write_lock(todos_file, task_id, timeout=10):
-                    await asyncio.to_thread(write_json_file, todos_file, existing_todos)
+                    await asyncio.to_thread(write_json_file, todos_file, track)
                     
             else:
                 with open(todos_file, "w", encoding="utf-8") as f:
-                    json.dump(existing_todos, f, ensure_ascii=False, indent=2)
+                    json.dump(track, f, ensure_ascii=False, indent=2)
             return "任务列表更新成功"
         else:
             return "任务列表为空，无需更新"
@@ -305,6 +305,9 @@ async def execute_node(state: PlanExecute) -> PlanExecute:
     index = state.get("index", 0)
     if len(steps) == 0:
         return {"response": "没有计划，无需执行"}
+
+    check_permission_and_dir()
+    read_todo_list()
 
     task_list = steps.pop(0)
     

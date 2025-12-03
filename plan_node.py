@@ -242,4 +242,6 @@ async def plan_node(state: PlanExecute) -> PlanExecute:
         todo_write(False, plan_table)
 
         result = parse_parallel_tasks(result)
-        return {"plan": result}
+        return {
+            "plan": result
+        }
