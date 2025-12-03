@@ -8,5 +8,4 @@ done：
 7. 在execute_node引入全局todos，防止多个异步任务并发执行时读写todos.json出现的脏读问题
 
 todo:
-1. 改造当前的execute_node，引入langchain的批处理机制，降低api请求成本
-2. 引入langchain1.1的自动适配大模型最长上下文长度的特性，改造上下文总结功能
+1. 引入langchain1.1的自动适配大模型最长上下文长度的特性，改造上下文总结功能，同时提供降级处理的策略，当langchain不支持大模型的提供商时，降级使用chatOpenAI初始化client

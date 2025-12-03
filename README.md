@@ -84,8 +84,8 @@ Execute Agent 是一个智能代码执行助手，基于 LangChain 和 LangGraph
 
    **系统参数**：
    - `RECURSION_LIMIT`: 最大递归深度（默认 1000）
-   - `SUMMARY_MAX_LENGTH`: 摘要最大长度（默认 4000）
-   - `SUMMARY_THRESHOLD`: 触发摘要的上下文长度阈值（默认 10000）
+   - `SUMMARY_MAX_LENGTH`: 摘要最大长度
+   - `SUMMARY_THRESHOLD`: 触发文档摘要的上下文长度阈值
 
    或者通过**环境变量**设置上述任何配置项（环境变量优先级高于 `config.json`）。
 
