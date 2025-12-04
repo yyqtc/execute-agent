@@ -17,7 +17,7 @@ def load_gitignore_patterns(root_dir: str) -> tuple:
         (忽略模式列表, 否定模式列表) 的元组
     """
     gitignore_path = os.path.join(root_dir, ".gitignore")
-    ignore_patterns = ["__pycache__/", ".git/", ".mypy_cache/", ".pytest_cache/", ".semantic_cache/"]
+    ignore_patterns = ["__pycache__/", ".git/", ".mypy_cache/", ".pytest_cache/", ".semantic_cache/", "package-lock.json", "yarn.lock", "poetry.lock", "uv.lock"]
     negation_patterns = []
 
     if os.path.exists(gitignore_path) and os.path.isfile(gitignore_path):
