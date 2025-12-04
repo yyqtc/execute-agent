@@ -20,7 +20,7 @@ async def initialize_plan_model():
             model=config.get("PLAN_LLM_MODEL", "qwen-plus"),
             openai_api_key=config["LLM_API_KEY"],
             openai_api_base=config["LLM_API_BASE"],
-            temperature=0.3,
+            temperature=0.2,
         ), "plan_model")
     except Exception as e:
         logger.error(f"错误: 计划用模型 初始化失败: {e}")
@@ -287,10 +287,11 @@ async def initialize_normal_execute_agent(model, tools=[]):
     3. 你输出的代码中不准含有emoji！
     4. 你必须默认在所有的任务都是在当前这个目录下执行的！当然也包括这个目录的子目录！
     5. 删除文件、修改文件、写入文件工具的overwrite为True时的覆写模式是不可逆的操作！必须谨慎使用！
-    6. 任务中让你分析代码，默认使用python的ast进行分析！只有在明确告诉你需要测试代码是否存在bug时，才使用read_lints方法！
-    7. 你需要将你的实现结果更新到development_log.md文件中，更新到development_log.md文件中的内容必须是具体到如何思考的和如何实现的！
-    8. 你必须保证development_log.md文件中的内容长度控制在5000个token以内！
-    9. 请尽量在一次response中调用多个工具，而不要一次只调用一个工具！
+    6. 只有当你明确知道要写入的文件中的内容应该被舍弃时，才使用overwrite为True时的覆写模式！
+    7. 任务中让你分析代码，默认使用python的ast进行分析！只有在明确告诉你需要测试代码是否存在bug时，才使用read_lints方法！
+    8. 你需要将你的实现结果更新到development_log.md文件中，更新到development_log.md文件中的内容必须是具体到如何思考的和如何实现的！
+    9. 你必须保证development_log.md文件中的内容长度控制在5000个token以内！
+    10. 请尽量在一次response中调用多个工具，而不要一次只调用一个工具！
     """
     if not model:
         model = initialize_analysis_execute_model()
@@ -370,10 +371,12 @@ async def initialize_code_agent(model, tools=[]):
     3. 你输出的代码中不准含有emoji！
     4. 你输出代码时务必保证代码的鲁棒性和准确性！
     5. 除了测试用脚本，你必须谨慎删除、修改任何文件，谨慎使用overwrite为True时的覆写模式的写入工具！
+    6. 只有当你明确知道要写入的文件中的内容应该被舍弃时，才使用overwrite为True时的覆写模式！比如需要修改代码、重写代码时！
     6. 请尽量在一次response中调用多个工具，而不要一次只调用一个工具！
     7. 你应该先学习gitee中相似功能是如何实现的，然后再生成代码！
     8. 当生成Web应用时，必须创建一个美观且现代化的界面，不要生成简陋或丑陋的页面！
-    9. 你在编码前必须通过gitee查询相似功能是如何实现的，然后再生成代码！
+    9. 你不准用TODO之类去完成交代给你实现的功能！你交付出的结果必须是能够真实实现任务要求的结果！
+    10. 当用户的描述和代码相冲突时，以用户的描述为准！
     """
 
     return (create_agent(
