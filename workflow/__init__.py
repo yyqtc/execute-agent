@@ -1,3 +1,14 @@
 # 为了让系统开发代码、测试代码的过程高可控、高可知，同时延续本系统可扩展性好的特性，因此我决定将execute_node.py的code_execute_node拆分成面向不同工程类型的workflow
 # 这个模块将用于存放所有代码开发、测试的workflow
 
+"""
+workflow 流程设计原则：
+
+坚持本系统作为cli工具的设计初衷，尽量以对cli使用友好的原则进行workflow设计
+由上层planer和replaner显式提供工程类型和任务，workflow根据工程类型和开发任务进行代码开发、测试
+
+plan_node：根据工程类型和任务，生成本次任务的计划
+patch_node：根据计划，生成本次任务的diff文件，同时提醒用户进行确认，确认后根据用户确认后的diff生成patch，然后执行patch。
+test_node：根据patch_node传入的diff，分析修改了、创建了那些文件，执行静态代码分析或单元测试（根据workflow的设计自行选择）。
+replan_node：只有当静态代码分析或单元测试失败时流转到replan_node，这个节点将根据test_node生成的错误信息，更新计划，然后流转到patch_node，replan节点设置最大重试次数，超过最大重试次数后，将任务流转到end节点
+"""
