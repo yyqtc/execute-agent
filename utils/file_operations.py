@@ -34,7 +34,7 @@ def format_error(
 
 
 def _write_file_impl(
-    file_path: str, content: str, file_writer: Optional[object] = None, overwrite: bool = False
+    file_path: str, content: str, file_writer: Optional[object] = None, overwrite: bool = True
 ) -> str:
     """
     写入文件的内部实现函数
@@ -214,7 +214,7 @@ def read_file(
 
 
 def write_file(
-    file_path: str, content: str, file_writer: Optional[object] = None, overwrite: bool = False
+    file_path: str, content: str, file_writer: Optional[object] = None, overwrite: bool = True
 ) -> str:
     """
     写入文件内容，集成 SafeFileWriter
