@@ -35,15 +35,23 @@ plan_agent = create_agent(
     model=_model,
     system_prompt=_prompt,
     tools=[codebase_search],
-    output_format=VuePlan
+    response_format=VuePlan
 )
 
 async def plan_node(state: VuePlanExecute) -> VuePlanExecute:
     result = await plan_agent.ainvoke({
         "messages": [{"role": "user", "content": state["input"]}]
     })
-    print(f"result: {result}")
+    result = result.get("structured_response", None)
+    if result is None:
+        return {
+            "response": "计划生成失败，返回为空"
+        }
+    else:
+        return {
+            "steps": result.steps
+        }
 
 
 if __name__ == "__main__":
-    asyncio.run(plan_node({"input": "创建一个简单的Vue 3项目"}))
+    print(asyncio.run(plan_node({"input": "在/frontend目录下创建一个简单的Vue 3项目"})))
