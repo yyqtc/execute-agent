@@ -4,6 +4,7 @@ docs/
 .semantic_cache/
 .mypy_cache/
 .pytest_cache/
+frontend/
 
 config.json
 *.pyc
