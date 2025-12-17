@@ -5,6 +5,7 @@ docs/
 .mypy_cache/
 .pytest_cache/
 frontend/
+workflow/
 
 config.json
 *.pyc
